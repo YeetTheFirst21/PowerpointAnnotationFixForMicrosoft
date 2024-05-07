@@ -1,0 +1,21 @@
+﻿<Window x:Class="Wpf_annotate.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Wpf_annotate"
+        mc:Ignorable="d"
+         AllowsTransparency="True" WindowStyle="None" WindowState="Maximized" Background="#01ffffff" Topmost="True" MouseWheel="Window_MouseWheel">
+    <Grid>
+        <InkCanvas Name ="inkCanvas1" ForceCursor="True" Cursor="Arrow">
+            <InkCanvas.Background>
+                <SolidColorBrush Opacity="0"></SolidColorBrush>
+            </InkCanvas.Background>
+            <InkCanvas.DefaultDrawingAttributes >
+                <DrawingAttributes
+                    Color = "Red" Width = "2"  StylusTip="Rectangle"/>
+            </InkCanvas.DefaultDrawingAttributes>
+        </InkCanvas>
+    </Grid>
+
+</Window>
