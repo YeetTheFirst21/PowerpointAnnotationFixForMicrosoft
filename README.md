@@ -5,14 +5,16 @@
 
 # How to use:
 
-#### Start presenting your slides
+#### 1. Start presenting your slides
 
-#### Run the app by pressing it from start menu or alt-tabbing into the folder the exe is in
+#### 2. Run the app by pressing it from start menu or alt-tabbing into the folder the exe is in
 
-#### After app starts, just alt-tab OR just press Left/Right Arrow OR scroll up/down to get back to your slides
+#### 3. After app starts, just alt-tab OR just press Left/Right Arrow OR scroll up/down to get back to your slides
 
 ## Shortcuts:
 
 #### Press q to kill the application
 
 #### Press c to clean the annotation already done on screen
+
+#### Press Left/Right Arrow OR scroll up/down to go through your slides however you wish even while keeping the annotation
