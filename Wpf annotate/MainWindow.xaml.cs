@@ -12,10 +12,31 @@ namespace Wpf_annotate
     /// </summary>
     public partial class MainWindow : Window
     {
+        Process[] processes = new Process[0];
         public MainWindow()
         {
             InitializeComponent();
             this.KeyDown += new KeyEventHandler(MainWindow_KeyDown);
+            findPowerPoint();
+        }
+
+
+        private void findPowerPoint()
+        {
+            //get all processes
+            processes = Process.GetProcesses();
+            /*
+            foreach (Process process in processes)
+            {
+                if (!String.IsNullOrEmpty(process.MainWindowTitle))
+                {
+                    Console.WriteLine("Process: {0} ID: {1} Window title: {2}", process.ProcessName, process.Id, process.MainWindowTitle);
+                }
+            }
+            */
+
+            //get only processes that has window title PowerPoint
+            processes = processes.Where(p => p.MainWindowTitle.Contains("PowerPoint Slide Show")).ToArray();
         }
 
         [DllImport("user32.dll")]
@@ -33,101 +54,99 @@ namespace Wpf_annotate
             {
                 //close the app
                 this.Close();
-            }
-            
-            //else forward all input to the other app running behin it:
-            else
+            }else if(e.Key == Key.Right || e.Key == Key.Left)
             {
-                if (e.Key == Key.Right)
+                
+
+                //need to recall this as if you alttab into Powerpoints main app, the process will be lost :(
+                //findPowerPoint();
+                //no more, found a workaround with the or: :)
+                if(processes.Length < 1 || processes[0].HasExited)
                 {
-                    Process[] processes = Process.GetProcesses();
-
-                    //get only processes that has window title PowerPoint
-                    processes = processes.Where(p => p.MainWindowTitle.Contains("PowerPoint")).ToArray();
-
-                    foreach (Process proc in processes)
+                    findPowerPoint();
+                    if(processes.Length < 1)
                     {
-                        SetForegroundWindow(proc.MainWindowHandle);
-                        //send right arrow
-                        System.Windows.Forms.SendKeys.SendWait("{RIGHT}");
-                        //sleep for 10 ms
-                        System.Threading.Thread.Sleep(10);
-                        //send alt+tab
-                        //System.Windows.Forms.SendKeys.SendWait("%{TAB}");
-                        //make this app the active window
-                        SetForegroundWindow(Process.GetCurrentProcess().MainWindowHandle);
-
-                        
+                        MessageBox.Show("Powerpoint not Found!\nYou might try restaring the presentation and not pressing main powerpoint tab back.","Error",MessageBoxButton.OK,MessageBoxImage.Error);
+                        e.Handled = false;
+                        return;
                     }
+                }
+                
 
-                }else if(e.Key== Key.Left)
+                if(e.Key == Key.Left)
                 {
-                    Process[] processes = Process.GetProcesses();
-                    //get only processes that has window title PowerPoint
-                    processes = processes.Where(p => p.MainWindowTitle.Contains("PowerPoint")).ToArray();
                     foreach (Process proc in processes)
                     {
                         SetForegroundWindow(proc.MainWindowHandle);
-                        //send left arrow
+                        //send right arrow after sleeping for 2ms
+                        System.Threading.Thread.Sleep(2);
                         System.Windows.Forms.SendKeys.SendWait("{LEFT}");
-                        //sleep for 10 ms
-                        System.Threading.Thread.Sleep(10);
-                        //send alt+tab
-                        //System.Windows.Forms.SendKeys.SendWait("%{TAB}");
+                        //sleep for 2 ms
+                        System.Threading.Thread.Sleep(2);
                         //make this app the active window
                         SetForegroundWindow(Process.GetCurrentProcess().MainWindowHandle);
                     }
                 }
+                else
+                {
+                    foreach (Process proc in processes)
+                    {
+                        SetForegroundWindow(proc.MainWindowHandle);
+                        //send right arrow after sleeping for 2ms
+                        System.Threading.Thread.Sleep(2);
+                        System.Windows.Forms.SendKeys.SendWait("{RIGHT}");
+                        //sleep for 2 ms
+                        System.Threading.Thread.Sleep(2);
+                        //make this app the active window
+                        SetForegroundWindow(Process.GetCurrentProcess().MainWindowHandle);
+                    }
+                }
+
+            }
+            else
+            {
                 e.Handled= false;
             }
         }
 
         private void Window_MouseWheel(object sender, MouseWheelEventArgs e)
         {
-            Process[] processes = Process.GetProcesses();
-            //get only processes that has window title PowerPoint
-            processes = processes.Where(p => p.MainWindowTitle.Contains("PowerPoint")).ToArray();
-            foreach (Process proc in processes)
+            if (processes.Length < 1 || processes[0].HasExited)
             {
-                SetForegroundWindow(proc.MainWindowHandle);
-                //send left arrow
-                System.Windows.Forms.SendKeys.SendWait("{LEFT}");
-                //sleep for 10 ms
-                System.Threading.Thread.Sleep(10);
-                //send alt+tab
-                //System.Windows.Forms.SendKeys.SendWait("%{TAB}");
-                //make this app the active window
-                SetForegroundWindow(Process.GetCurrentProcess().MainWindowHandle);
+                findPowerPoint();
+                if (processes.Length < 1)
+                {
+                    MessageBox.Show("Powerpoint not Found!\nYou might try restaring the presentation and not pressing main powerpoint tab back.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    e.Handled = false;
+                    return;
+                }
             }
-
             //if the mouse wheel is scrolled down, send right arrow key
             if (e.Delta < 0)
             {
                 foreach (Process proc in processes)
                 {
                     SetForegroundWindow(proc.MainWindowHandle);
-                    //send right arrow
+                    //send right arrow after sleeping for 2ms
+                    System.Threading.Thread.Sleep(2);
                     System.Windows.Forms.SendKeys.SendWait("{RIGHT}");
-                    //sleep for 10 ms
-                    System.Threading.Thread.Sleep(10);
-                    //send alt+tab
-                    //System.Windows.Forms.SendKeys.SendWait("%{TAB}");
+                    //sleep for 2 ms
+                    System.Threading.Thread.Sleep(2);
                     //make this app the active window
                     SetForegroundWindow(Process.GetCurrentProcess().MainWindowHandle);
                 }
             }
             //if the mouse wheel is scrolled up, send left arrow key
-            else
+            else if (e.Delta > 0)
             {
                 foreach (Process proc in processes)
                 {
                     SetForegroundWindow(proc.MainWindowHandle);
-                    //send left arrow
+                    //send left arrow after sleeping for 2ms
+                    System.Threading.Thread.Sleep(2);
                     System.Windows.Forms.SendKeys.SendWait("{LEFT}");
-                    //sleep for 10 ms
-                    System.Threading.Thread.Sleep(10);
-                    //send alt+tab
-                    //System.Windows.Forms.SendKeys.SendWait("%{TAB}");
+                    //sleep for 2 ms
+                    System.Threading.Thread.Sleep(2);
                     //make this app the active window
                     SetForegroundWindow(Process.GetCurrentProcess().MainWindowHandle);
                 }
