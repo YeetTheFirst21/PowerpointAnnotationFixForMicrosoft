@@ -18,3 +18,9 @@
 #### Press c to clean the annotation already done on screen
 
 #### Press Left/Right Arrow OR scroll up/down to go through your slides however you wish even while keeping the annotation
+
+### Starting with release 2 / 1.0.1 :
+
+#### Press p to choose pen color
+
+#### Press o to choose pen tip size
