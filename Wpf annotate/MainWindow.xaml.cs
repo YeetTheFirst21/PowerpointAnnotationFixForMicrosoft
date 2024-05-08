@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace Wpf_annotate
@@ -13,6 +14,7 @@ namespace Wpf_annotate
     public partial class MainWindow : Window
     {
         Process[] processes = new Process[0];
+        private System.Windows.Forms.ColorDialog colorDialog = new System.Windows.Forms.ColorDialog();
         public MainWindow()
         {
             InitializeComponent();
@@ -102,10 +104,98 @@ namespace Wpf_annotate
                     }
                 }
 
+            }else if (e.Key == Key.P)
+            {
+                //open color picker
+                colorDialog.ShowDialog();
+                //set the color of the inkcanvas to the color selected
+                System.Drawing.Color color = colorDialog.Color;
+                inkCanvas1.DefaultDrawingAttributes.Color = System.Windows.Media.Color.FromArgb(color.A, color.R, color.G, color.B);
+            }//if o is pressed, select pen width:
+            else if (e.Key == Key.O)
+            {
+                //open a textbox and a button in a border to enter the pen width with the current pen width as default value:
+                Border border = new Border();
+                border.Width = 200;
+                border.Height = 100;
+                border.BorderBrush = System.Windows.Media.Brushes.Black;
+                border.BorderThickness = new Thickness(5);
+                border.CornerRadius = new CornerRadius(20);
+                border.HorizontalAlignment = HorizontalAlignment.Center;
+                border.VerticalAlignment = VerticalAlignment.Center;
+                border.Background = System.Windows.Media.Brushes.White;
+                
+
+
+                TextBox textBox = new TextBox();
+                textBox.Text = inkCanvas1.DefaultDrawingAttributes.Width.ToString();
+                textBox.HorizontalAlignment = HorizontalAlignment.Center;
+                textBox.VerticalAlignment = VerticalAlignment.Center;
+                textBox.Width = 50;
+                textBox.Height = 20;
+                textBox.Margin = new Thickness(0, 0, 0, 20);
+
+                //when enter is pressed, set the pen width to the value in the textbox
+                textBox.KeyDown += (object senderrr, KeyEventArgs eee) =>
+                {
+                    if (eee.Key == Key.Enter)
+                    {
+                        savePencil(border, textBox);
+                    }
+                };
+
+                //add a label to grid2 in its center to show the user what to do
+                Label label = new Label();
+                label.Content = "Enter Pen Width:";
+                label.HorizontalAlignment = HorizontalAlignment.Center;
+                label.VerticalAlignment = VerticalAlignment.Top;
+                label.Margin = new Thickness(0, 0, 0, 0);
+                label.Width = 150;
+                label.Height = 27;
+                label.FontSize = 12;
+                label.FontWeight = FontWeights.Bold;
+                label.Foreground = System.Windows.Media.Brushes.Black;
+                label.Background = System.Windows.Media.Brushes.White;
+
+                Button button = new Button();
+                button.Content = "Set";
+                button.HorizontalAlignment = HorizontalAlignment.Center;
+                button.VerticalAlignment = VerticalAlignment.Bottom;
+                button.Width = 50;
+                button.Height = 20;
+                button.Margin = new Thickness(0, 20, 0, 0);
+                button.Click += (object senderr, RoutedEventArgs ee) =>
+                {
+                    savePencil(border, textBox);
+                };
+                
+                //border only accepts one child, so we add a grid to it
+                Grid grid2 = new Grid();
+                grid2.Children.Add(textBox);
+                grid2.Children.Add(button);
+                grid2.Children.Add(label);
+                border.Child = grid2;
+                border.Visibility = Visibility.Visible;
+                grid1.Children.Add(border);
             }
             else
             {
                 e.Handled= false;
+            }
+        }
+
+        private void savePencil(Border border, TextBox textBox)
+        {
+            double val;
+            if (double.TryParse(textBox.Text, out val))
+            {
+                inkCanvas1.DefaultDrawingAttributes.Width = val;
+                inkCanvas1.DefaultDrawingAttributes.Height = val;
+                border.Visibility = Visibility.Hidden;
+            }
+            else
+            {
+                MessageBox.Show("Please enter a valid number", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

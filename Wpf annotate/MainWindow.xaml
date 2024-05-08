@@ -6,15 +6,16 @@
         xmlns:local="clr-namespace:Wpf_annotate"
         mc:Ignorable="d"
          AllowsTransparency="True" WindowStyle="None" WindowState="Maximized" Background="#01ffffff" Topmost="True" MouseWheel="Window_MouseWheel">
-    <Grid>
+    <Grid Name="grid1">
         <InkCanvas Name ="inkCanvas1" ForceCursor="True" Cursor="Arrow">
             <InkCanvas.Background>
                 <SolidColorBrush Opacity="0"></SolidColorBrush>
             </InkCanvas.Background>
             <InkCanvas.DefaultDrawingAttributes >
                 <DrawingAttributes
-                    Color = "Red" Width = "2"  StylusTip="Rectangle"/>
+                    Color = "Red" Width = "2" Height="2" StylusTip="Ellipse"/>
             </InkCanvas.DefaultDrawingAttributes>
+            <InkPresenter></InkPresenter>
         </InkCanvas>
     </Grid>
 
