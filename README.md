@@ -1,4 +1,4 @@
-#Wpf annotate - An annotation app for Powerpoint as the 365 version has random spikes that go up when using the app.
+# Wpf annotate - An annotation app for Powerpoint as the 365 version has random spikes that go up when using the app.
 <p align="center">
   <img src="Wpf annotate/PPTX-Annotation.ico">
 </p>
