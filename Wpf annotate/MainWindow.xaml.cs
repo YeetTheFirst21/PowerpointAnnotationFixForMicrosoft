@@ -1,10 +1,19 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Forms;
 using System.Windows.Input;
+using Button = System.Windows.Controls.Button;
+using HorizontalAlignment = System.Windows.HorizontalAlignment;
+using KeyEventArgs = System.Windows.Input.KeyEventArgs;
+using KeyEventHandler = System.Windows.Input.KeyEventHandler;
+using Label = System.Windows.Controls.Label;
+using MessageBox = System.Windows.MessageBox;
+using TextBox = System.Windows.Controls.TextBox;
 
 namespace Wpf_annotate
 {
@@ -38,11 +47,23 @@ namespace Wpf_annotate
             */
 
             //get only processes that has window title PowerPoint
-            processes = processes.Where(p => p.MainWindowTitle.Contains("PowerPoint Slide Show")).ToArray();
+            // We assume that the fullscreen window of PowerPoint is its presentation
+            processes = processes.Where(p => p.MainWindowTitle.Contains("PowerPoint") && IsFullScreen(p)).ToArray();
         }
 
         [DllImport("user32.dll")]
         public static extern int SetForegroundWindow(IntPtr hWnd);
+        // https://stackoverflow.com/a/3744720/8302811
+        [StructLayout(LayoutKind.Sequential)]
+        private struct RECT
+        {
+            public int left;
+            public int top;
+            public int right;
+            public int bottom;
+        }
+        [DllImport("user32.dll")]
+        private static extern bool GetWindowRect(HandleRef hWnd, [In, Out] ref RECT rect);
 
         [STAThread]
         private void MainWindow_KeyDown(object sender, KeyEventArgs e)
@@ -240,6 +261,27 @@ namespace Wpf_annotate
                     //make this app the active window
                     SetForegroundWindow(Process.GetCurrentProcess().MainWindowHandle);
                 }
+            }
+        }
+
+        // https://stackoverflow.com/a/3744720/8302811
+        public static bool IsFullScreen(Process process, Screen screen = null)
+        {
+            if (screen == null)
+            {
+                screen = Screen.PrimaryScreen;
+            }
+            RECT rect = new RECT();
+            GetWindowRect(new HandleRef(null, process.MainWindowHandle), ref rect);
+            return new Rectangle(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top).Contains(screen.Bounds);
+        }
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            findPowerPoint();
+            if (processes.Length > 0 && !processes[0].HasExited)
+            {
+                SetForegroundWindow(processes[0].MainWindowHandle);
             }
         }
     }
