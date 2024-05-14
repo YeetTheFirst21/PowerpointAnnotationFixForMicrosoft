@@ -145,11 +145,10 @@ namespace Wpf_annotate
                 border.HorizontalAlignment = HorizontalAlignment.Center;
                 border.VerticalAlignment = VerticalAlignment.Center;
                 border.Background = System.Windows.Media.Brushes.White;
-                
+
 
 
                 TextBox textBox = new TextBox();
-                textBox.Text = inkCanvas1.DefaultDrawingAttributes.Width.ToString();
                 textBox.HorizontalAlignment = HorizontalAlignment.Center;
                 textBox.VerticalAlignment = VerticalAlignment.Center;
                 textBox.Width = 50;
@@ -198,6 +197,13 @@ namespace Wpf_annotate
                 border.Child = grid2;
                 border.Visibility = Visibility.Visible;
                 grid1.Children.Add(border);
+
+                textBox.Focus();
+                e.Handled = true;
+                textBox.Text = inkCanvas1.DefaultDrawingAttributes.Width.ToString();
+                //make the input index at the end:
+                textBox.SelectionStart = textBox.Text.Length;
+
             }
             else
             {
