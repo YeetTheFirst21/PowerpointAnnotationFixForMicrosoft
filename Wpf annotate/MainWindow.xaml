@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Wpf_annotate"
         mc:Ignorable="d"
-         AllowsTransparency="True" WindowStyle="None" WindowState="Maximized" Background="#01ffffff" Topmost="True" MouseWheel="Window_MouseWheel" Loaded="Window_Loaded">
+         AllowsTransparency="True" WindowStyle="None" WindowState="Maximized" Background="#01ffffff" Topmost="True" MouseWheel="Window_MouseWheel" Loaded="Window_Loaded" StateChanged="Window_StateChanged">
     <Grid Name="grid1">
         <InkCanvas Name ="inkCanvas1" ForceCursor="True" Cursor="Arrow">
             <InkCanvas.Background>
