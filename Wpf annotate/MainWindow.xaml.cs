@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Input;
+using Microsoft.Office.Core;
 using Microsoft.Office.Interop.PowerPoint;
 using Button = System.Windows.Controls.Button;
 using HorizontalAlignment = System.Windows.HorizontalAlignment;
@@ -23,12 +24,21 @@ namespace Wpf_annotate
     /// </summary>
     public partial class MainWindow : Window
     {
-        private System.Windows.Forms.ColorDialog colorDialog = new System.Windows.Forms.ColorDialog();
+        private System.Windows.Forms.ColorDialog colorDialog = new ColorDialog();
         private readonly Microsoft.Office.Interop.PowerPoint.Application PPT = 
             new Microsoft.Office.Interop.PowerPoint.Application();
 
-        private Microsoft.Office.Interop.PowerPoint.SlideShowWindow getSlideShowWindow()
+        private SlideShowWindow getSlideShowWindow()
         {
+            foreach (SlideShowWindow window in PPT.SlideShowWindows)
+            {
+                return window;
+            }
+
+            // Try to run the presentation.
+            try { PPT.ActivePresentation.SlideShowSettings.Run(); }
+            catch { return null; }
+
             foreach (SlideShowWindow window in PPT.SlideShowWindows)
             {
                 return window;
@@ -39,22 +49,11 @@ namespace Wpf_annotate
         public MainWindow()
         {
             InitializeComponent();
-            this.KeyDown += new KeyEventHandler(MainWindow_KeyDown);
+            this.KeyDown += MainWindow_KeyDown;
         }
 
         [DllImport("user32.dll")]
         public static extern int SetForegroundWindow(IntPtr hWnd);
-        // https://stackoverflow.com/a/3744720/8302811
-        [StructLayout(LayoutKind.Sequential)]
-        private struct RECT
-        {
-            public int left;
-            public int top;
-            public int right;
-            public int bottom;
-        }
-        [DllImport("user32.dll")]
-        private static extern bool GetWindowRect(HandleRef hWnd, [In, Out] ref RECT rect);
         // https://stackoverflow.com/q/39458046/8302811
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -73,7 +72,7 @@ namespace Wpf_annotate
             }else if(e.Key == Key.Q)
             {
                 //close the app
-                this.Close();
+                Close();
             }else if(e.Key == Key.Right || e.Key == Key.Left)
             {
 
@@ -89,9 +88,9 @@ namespace Wpf_annotate
 
                 if (e.Key == Key.Left)
                 {
-                    foreach (Process proc in PPT.SlideShowWindows)
+                    foreach (SlideShowWindow window in PPT.SlideShowWindows)
                     {
-                        SetForegroundWindow(proc.MainWindowHandle);
+                        SetForegroundWindow((IntPtr) window.HWND);
                         //send right arrow after sleeping for 2ms
                         System.Threading.Thread.Sleep(2);
                         System.Windows.Forms.SendKeys.SendWait("{LEFT}");
@@ -103,9 +102,9 @@ namespace Wpf_annotate
                 }
                 else
                 {
-                    foreach (Process proc in PPT.SlideShowWindows)
+                    foreach (SlideShowWindow window in PPT.SlideShowWindows)
                     {
-                        SetForegroundWindow(proc.MainWindowHandle);
+                        SetForegroundWindow((IntPtr) window.HWND);
                         //send right arrow after sleeping for 2ms
                         System.Threading.Thread.Sleep(2);
                         System.Windows.Forms.SendKeys.SendWait("{RIGHT}");
@@ -147,7 +146,7 @@ namespace Wpf_annotate
                 textBox.Margin = new Thickness(0, 0, 0, 20);
 
                 //when enter is pressed, set the pen width to the value in the textbox
-                textBox.KeyDown += (object senderrr, KeyEventArgs eee) =>
+                textBox.KeyDown += (senderrr, eee) =>
                 {
                     if (eee.Key == Key.Enter)
                     {
@@ -200,9 +199,11 @@ namespace Wpf_annotate
             {
                 // Hide window
                 WindowState = WindowState.Minimized;
-                if (PPT.SlideShowWindows.Count > 0)
+
+                SlideShowWindow window = getSlideShowWindow();
+                if (window != null)
                 {
-                    ShowWindow((IntPtr) getSlideShowWindow().HWND, SW_MINIMIZE);
+                    ShowWindow((IntPtr) window.HWND, SW_MINIMIZE);
                 }
             }
             else
@@ -235,9 +236,9 @@ namespace Wpf_annotate
             //if the mouse wheel is scrolled down, send right arrow key
             if (e.Delta < 0)
             {
-                foreach (Process proc in PPT.SlideShowWindows)
+                foreach (SlideShowWindow window in PPT.SlideShowWindows)
                 {
-                    SetForegroundWindow(proc.MainWindowHandle);
+                    SetForegroundWindow((IntPtr) window.HWND);
                     //send right arrow after sleeping for 2ms
                     System.Threading.Thread.Sleep(2);
                     System.Windows.Forms.SendKeys.SendWait("{RIGHT}");
@@ -250,9 +251,9 @@ namespace Wpf_annotate
             //if the mouse wheel is scrolled up, send left arrow key
             else if (e.Delta > 0)
             {
-                foreach (Process proc in PPT.SlideShowWindows)
+                foreach (SlideShowWindow window in PPT.SlideShowWindows)
                 {
-                    SetForegroundWindow(proc.MainWindowHandle);
+                    SetForegroundWindow((IntPtr) window.HWND);
                     //send left arrow after sleeping for 2ms
                     System.Threading.Thread.Sleep(2);
                     System.Windows.Forms.SendKeys.SendWait("{LEFT}");
@@ -264,18 +265,6 @@ namespace Wpf_annotate
             }
         }
 
-        // https://stackoverflow.com/a/3744720/8302811
-        public static bool IsFullScreen(Process process, Screen screen = null)
-        {
-            if (screen == null)
-            {
-                screen = Screen.PrimaryScreen;
-            }
-            RECT rect = new RECT();
-            GetWindowRect(new HandleRef(null, process.MainWindowHandle), ref rect);
-            return rect.right - rect.left >= screen.Bounds.Width && rect.bottom - rect.top >= screen.Bounds.Height;
-        }
-
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             BringPowerpointForward();
@@ -283,9 +272,12 @@ namespace Wpf_annotate
 
         private void BringPowerpointForward()
         {
-            if (PPT.SlideShowWindows.Count > 0)
+            SlideShowWindow window = getSlideShowWindow();
+            if (window != null)
             {
-                SetForegroundWindow((IntPtr) getSlideShowWindow().HWND);
+                IntPtr hwnd = (IntPtr) window.HWND;
+                ShowWindow(hwnd, SW_MAXIMIZE);
+                SetForegroundWindow(hwnd);
             }
         }
 
