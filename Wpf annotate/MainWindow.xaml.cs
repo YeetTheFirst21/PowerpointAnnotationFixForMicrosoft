@@ -7,6 +7,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Input;
+using Microsoft.Office.Core;
+using Microsoft.Office.Interop.PowerPoint;
 using Button = System.Windows.Controls.Button;
 using HorizontalAlignment = System.Windows.HorizontalAlignment;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
@@ -22,48 +24,42 @@ namespace Wpf_annotate
     /// </summary>
     public partial class MainWindow : Window
     {
-        Process[] processes = new Process[0];
-        private System.Windows.Forms.ColorDialog colorDialog = new System.Windows.Forms.ColorDialog();
+        private System.Windows.Forms.ColorDialog colorDialog = new ColorDialog();
+        private readonly Microsoft.Office.Interop.PowerPoint.Application PPT = 
+            new Microsoft.Office.Interop.PowerPoint.Application();
+
+        private SlideShowWindow getSlideShowWindow()
+        {
+            foreach (SlideShowWindow window in PPT.SlideShowWindows)
+            {
+                return window;
+            }
+
+            // Try to run the presentation.
+            try { PPT.ActivePresentation.SlideShowSettings.Run(); }
+            catch { return null; }
+
+            foreach (SlideShowWindow window in PPT.SlideShowWindows)
+            {
+                return window;
+            }
+            return null;
+        }
+
         public MainWindow()
         {
             InitializeComponent();
-            this.KeyDown += new KeyEventHandler(MainWindow_KeyDown);
-            findPowerPoint();
-        }
-
-
-        private void findPowerPoint()
-        {
-            //get all processes
-            processes = Process.GetProcesses();
-            /*
-            foreach (Process process in processes)
-            {
-                if (!String.IsNullOrEmpty(process.MainWindowTitle))
-                {
-                    Console.WriteLine("Process: {0} ID: {1} Window title: {2}", process.ProcessName, process.Id, process.MainWindowTitle);
-                }
-            }
-            */
-
-            //get only processes that has window title PowerPoint
-            // We assume that the fullscreen window of PowerPoint is its presentation
-            processes = processes.Where(p => p.MainWindowTitle.Contains("PowerPoint") && IsFullScreen(p)).ToArray();
+            this.KeyDown += MainWindow_KeyDown;
         }
 
         [DllImport("user32.dll")]
         public static extern int SetForegroundWindow(IntPtr hWnd);
-        // https://stackoverflow.com/a/3744720/8302811
-        [StructLayout(LayoutKind.Sequential)]
-        private struct RECT
-        {
-            public int left;
-            public int top;
-            public int right;
-            public int bottom;
-        }
+        // https://stackoverflow.com/q/39458046/8302811
         [DllImport("user32.dll")]
-        private static extern bool GetWindowRect(HandleRef hWnd, [In, Out] ref RECT rect);
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+        private const int SW_MAXIMIZE = 3;
+        private const int SW_MINIMIZE = 6;
 
         [STAThread]
         private void MainWindow_KeyDown(object sender, KeyEventArgs e)
@@ -76,31 +72,25 @@ namespace Wpf_annotate
             }else if(e.Key == Key.Q)
             {
                 //close the app
-                this.Close();
+                Close();
             }else if(e.Key == Key.Right || e.Key == Key.Left)
             {
-                
+
 
                 //need to recall this as if you alttab into Powerpoints main app, the process will be lost :(
                 //findPowerPoint();
                 //no more, found a workaround with the or: :)
-                if(processes.Length < 1 || processes[0].HasExited)
+                if (PPT.SlideShowWindows.Count == 0)
                 {
-                    findPowerPoint();
-                    if(processes.Length < 1)
-                    {
-                        MessageBox.Show("Powerpoint not Found!\nYou might try restaring the presentation and not pressing main powerpoint tab back.","Error",MessageBoxButton.OK,MessageBoxImage.Error);
-                        e.Handled = false;
-                        return;
-                    }
+                    e.Handled = false;
+                    return;
                 }
-                
 
-                if(e.Key == Key.Left)
+                if (e.Key == Key.Left)
                 {
-                    foreach (Process proc in processes)
+                    foreach (SlideShowWindow window in PPT.SlideShowWindows)
                     {
-                        SetForegroundWindow(proc.MainWindowHandle);
+                        SetForegroundWindow((IntPtr) window.HWND);
                         //send right arrow after sleeping for 2ms
                         System.Threading.Thread.Sleep(2);
                         System.Windows.Forms.SendKeys.SendWait("{LEFT}");
@@ -112,9 +102,9 @@ namespace Wpf_annotate
                 }
                 else
                 {
-                    foreach (Process proc in processes)
+                    foreach (SlideShowWindow window in PPT.SlideShowWindows)
                     {
-                        SetForegroundWindow(proc.MainWindowHandle);
+                        SetForegroundWindow((IntPtr) window.HWND);
                         //send right arrow after sleeping for 2ms
                         System.Threading.Thread.Sleep(2);
                         System.Windows.Forms.SendKeys.SendWait("{RIGHT}");
@@ -156,7 +146,7 @@ namespace Wpf_annotate
                 textBox.Margin = new Thickness(0, 0, 0, 20);
 
                 //when enter is pressed, set the pen width to the value in the textbox
-                textBox.KeyDown += (object senderrr, KeyEventArgs eee) =>
+                textBox.KeyDown += (senderrr, eee) =>
                 {
                     if (eee.Key == Key.Enter)
                     {
@@ -205,12 +195,22 @@ namespace Wpf_annotate
                 textBox.SelectionStart = textBox.Text.Length;
 
             }
+            else if (e.Key == Key.H)
+            {
+                // Hide window
+                WindowState = WindowState.Minimized;
+
+                SlideShowWindow window = getSlideShowWindow();
+                if (window != null)
+                {
+                    ShowWindow((IntPtr) window.HWND, SW_MINIMIZE);
+                }
+            }
             else
             {
-                e.Handled= false;
+                e.Handled = false;
             }
         }
-
         private void savePencil(Border border, TextBox textBox)
         {
             double val;
@@ -228,22 +228,17 @@ namespace Wpf_annotate
 
         private void Window_MouseWheel(object sender, MouseWheelEventArgs e)
         {
-            if (processes.Length < 1 || processes[0].HasExited)
+            if (PPT.SlideShowWindows.Count == 0)
             {
-                findPowerPoint();
-                if (processes.Length < 1)
-                {
-                    MessageBox.Show("Powerpoint not Found!\nYou might try restaring the presentation and not pressing main powerpoint tab back.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    e.Handled = false;
-                    return;
-                }
+                e.Handled = false;
+                return;
             }
             //if the mouse wheel is scrolled down, send right arrow key
             if (e.Delta < 0)
             {
-                foreach (Process proc in processes)
+                foreach (SlideShowWindow window in PPT.SlideShowWindows)
                 {
-                    SetForegroundWindow(proc.MainWindowHandle);
+                    SetForegroundWindow((IntPtr) window.HWND);
                     //send right arrow after sleeping for 2ms
                     System.Threading.Thread.Sleep(2);
                     System.Windows.Forms.SendKeys.SendWait("{RIGHT}");
@@ -256,9 +251,9 @@ namespace Wpf_annotate
             //if the mouse wheel is scrolled up, send left arrow key
             else if (e.Delta > 0)
             {
-                foreach (Process proc in processes)
+                foreach (SlideShowWindow window in PPT.SlideShowWindows)
                 {
-                    SetForegroundWindow(proc.MainWindowHandle);
+                    SetForegroundWindow((IntPtr) window.HWND);
                     //send left arrow after sleeping for 2ms
                     System.Threading.Thread.Sleep(2);
                     System.Windows.Forms.SendKeys.SendWait("{LEFT}");
@@ -270,24 +265,27 @@ namespace Wpf_annotate
             }
         }
 
-        // https://stackoverflow.com/a/3744720/8302811
-        public static bool IsFullScreen(Process process, Screen screen = null)
-        {
-            if (screen == null)
-            {
-                screen = Screen.PrimaryScreen;
-            }
-            RECT rect = new RECT();
-            GetWindowRect(new HandleRef(null, process.MainWindowHandle), ref rect);
-            return new Rectangle(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top).Contains(screen.Bounds);
-        }
-
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            findPowerPoint();
-            if (processes.Length > 0 && !processes[0].HasExited)
+            BringPowerpointForward();
+        }
+
+        private void BringPowerpointForward()
+        {
+            SlideShowWindow window = getSlideShowWindow();
+            if (window != null)
             {
-                SetForegroundWindow(processes[0].MainWindowHandle);
+                IntPtr hwnd = (IntPtr) window.HWND;
+                ShowWindow(hwnd, SW_MAXIMIZE);
+                SetForegroundWindow(hwnd);
+            }
+        }
+
+        private void Window_StateChanged(object sender, EventArgs e)
+        {
+            if (WindowState == WindowState.Maximized)
+            {
+                BringPowerpointForward();
             }
         }
     }
